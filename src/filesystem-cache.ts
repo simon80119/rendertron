@@ -86,7 +86,7 @@ export class FilesystemCache {
     ctx.status = 200;
   }
 
-  async clearAllCache() {
+  async clearAllCache(): Promise<void> {
     return new Promise((resolve) => {
       fs.readdir(this.getDir(''), (err, files) => {
         if (err) throw err;
@@ -254,7 +254,7 @@ export class FilesystemCache {
               typeof payload === 'object' &&
               payload.type === 'Buffer'
             ) {
-              ctx.body = Buffer.from(payload);
+              ctx.body = Buffer.from(payload as any);
             } else {
               ctx.body = payload;
             }

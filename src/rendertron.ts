@@ -153,7 +153,7 @@ export class Rendertron {
     const serialized = await this.renderer.serialize(
       url,
       mobileVersion,
-      ctx.query.timezoneId
+      ctx.query.timezoneId as any
     );
 
     for (const key in this.config.headers) {
@@ -192,7 +192,7 @@ export class Rendertron {
         url,
         mobileVersion,
         dimensions,
-        ctx.query.timezoneId
+        ctx.query.timezoneId as any
       );
 
       for (const key in this.config.headers) {

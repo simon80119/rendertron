@@ -1,4 +1,4 @@
-import puppeteer, { ScreenshotOptions } from 'puppeteer';
+import { Browser, HTTPRequest, HTTPResponse, ScreenshotOptions } from 'puppeteer';
 import url from 'url';
 import { dirname } from 'path';
 
@@ -23,10 +23,10 @@ const MOBILE_USERAGENT =
  * APIs that are able to handle web components and PWAs.
  */
 export class Renderer {
-  private browser: puppeteer.Browser;
+  private browser: Browser;
   private config: Config;
 
-  constructor(browser: puppeteer.Browser, config: Config) {
+  constructor(browser: Browser, config: Config) {
     this.browser = browser;
     this.config = config;
   }
@@ -108,7 +108,7 @@ export class Renderer {
     if (timezoneId) {
       try {
         await page.emulateTimezone(timezoneId);
-      } catch (e) {
+      } catch (e: any) {
         if (e.message.includes('Invalid timezone')) {
           return {
             status: 400,
@@ -127,7 +127,7 @@ export class Renderer {
 
     await page.setRequestInterception(true);
 
-    page.on('request', (interceptedRequest: puppeteer.HTTPRequest) => {
+    page.on('request', (interceptedRequest: HTTPRequest) => {
       if (this.restrictRequest(interceptedRequest.url())) {
         interceptedRequest.abort();
       } else {
@@ -135,12 +135,12 @@ export class Renderer {
       }
     });
 
-    let response: puppeteer.HTTPResponse | null = null;
+    let response: HTTPResponse | null = null;
     // Capture main frame response. This is used in the case that rendering
     // times out, which results in puppeteer throwing an error. This allows us
     // to return a partial response for what was able to be rendered in that
     // time frame.
-    page.on('response', (r: puppeteer.HTTPResponse) => {
+    page.on('response', (r: HTTPResponse) => {
       if (!response) {
         response = r;
       }
@@ -265,7 +265,7 @@ export class Renderer {
 
     await page.setRequestInterception(true);
 
-    page.addListener('request', (interceptedRequest: puppeteer.HTTPRequest) => {
+    page.addListener('request', (interceptedRequest: HTTPRequest) => {
       if (this.restrictRequest(interceptedRequest.url())) {
         interceptedRequest.abort();
       } else {
@@ -277,7 +277,7 @@ export class Renderer {
       await page.emulateTimezone(timezoneId);
     }
 
-    let response: puppeteer.HTTPResponse | null = null;
+    let response: HTTPResponse | null = null;
 
     try {
       // Navigate to page. Wait until there are no oustanding network requests.
@@ -319,6 +319,46 @@ export class Renderer {
     if (this.config.closeBrowser) {
       await this.browser.close();
     }
+    return buffer;
+  }
+
+  async pdf(
+    url: string,
+    options?: any): Promise<Buffer> {
+    const page = await this.browser.newPage();
+
+    let response: Response | null = null;
+
+    try {
+      // Navigate to page. Wait until there are no oustanding network requests.
+      response = (await page.goto(url, { timeout: this.config.timeout, waitUntil: 'networkidle0' })) as unknown as Response;
+      if (options && options.waitForSelector) await page.waitForSelector(options.waitForSelector, { visible: true, timeout: this.config.timeout });
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!response) {
+      await page.close();
+      throw new ScreenshotError('NoResponse');
+    }
+
+    // Disable access to compute metadata. See
+    // https://cloud.google.com/compute/docs/storing-retrieving-metadata.
+    if (response!.headers.get('metadata-flavor') === 'Google') {
+      await page.close();
+      throw new ScreenshotError('Forbidden');
+    }
+
+    const defaults = {
+      displayHeaderFooter: false,
+      headerTemplate: '',
+      footerTemplate: '',
+      printBackground: true,
+      format: 'A4'
+    }
+    const pdfOptions = Object.assign({}, defaults, options);
+    const buffer = await page.pdf(pdfOptions) as Buffer;
+    await page.close();
     return buffer;
   }
 }

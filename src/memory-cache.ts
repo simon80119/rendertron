@@ -154,7 +154,7 @@ export class MemoryCache {
     await next();
 
     if (ctx.status === 200) {
-      this.cacheContent(cacheKey, ctx.response.headers, ctx.body);
+      this.cacheContent(cacheKey, ctx.response.headers as any, ctx.body as any);
     }
   }
 

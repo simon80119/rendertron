@@ -1,0 +1,9 @@
+version: "3"
+services:
+  rendertron:
+    container_name: rendertron
+    restart: always
+    build: .
+    image: rendertron
+    ports:
+      - "3000:3000"
