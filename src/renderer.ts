@@ -344,7 +344,7 @@ export class Renderer {
 
     // Disable access to compute metadata. See
     // https://cloud.google.com/compute/docs/storing-retrieving-metadata.
-    if (response!.headers.get('metadata-flavor') === 'Google') {
+    if ((response!.headers as any)('metadata-flavor') === 'Google') {
       await page.close();
       throw new ScreenshotError('Forbidden');
     }
