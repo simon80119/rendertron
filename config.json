@@ -3,5 +3,6 @@
     "cacheConfig": {
         "cacheDurationMinutes": 1440,
         "cacheMaxEntries": -1
-    }
+    },
+    "puppeteerArgs": ["--no-sandbox", "--disable-dev-shm-usage"]
 }
